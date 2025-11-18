@@ -51,27 +51,15 @@ for jar_file in "${JAR_FILES[@]}"; do
     echo "=========================================="
     echo ""
     
-    # Step 1: Analyze the mod
-    echo "Step 1: Analyzing mod structure..."
-    echo "-----------------------------------"
-    # Change to output directory so JSON file is saved there
-    cd "$OUTPUT_DIR"
-    python3 /workspace/mod_analyzer.py "$jar_file" --json || {
-        echo "Warning: Analysis failed for $JAR_NAME, continuing..."
-    }
-    cd /workspace
-    echo ""
-    
-    # Step 2: Decompile and deobfuscate
-    echo "Step 2: Decompiling and deobfuscating..."
+    # Decompile and deobfuscate
+    echo "Decompiling and deobfuscating..."
     echo "-----------------------------------"
     OUTPUT_PATH="$OUTPUT_DIR/$JAR_NAME"
     
     if [ -n "$MAPPINGS_FILE" ]; then
         echo "Using mappings: $(basename "$MAPPINGS_FILE")"
         python3 /workspace/mod_deobfuscator.py "$jar_file" "$MAPPINGS_FILE" \
-            --output "$OUTPUT_PATH" \
-            --analyze || {
+            --output "$OUTPUT_PATH" || {
             echo "Warning: Deobfuscation failed for $JAR_NAME, trying without mappings..."
             python3 /workspace/mod_deobfuscator.py "$jar_file" \
                 --output "$OUTPUT_PATH" || {
