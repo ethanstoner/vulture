@@ -3,12 +3,11 @@
 
 set -e
 
-# Get the directory where this script is located
+# Get the directory where this script is located (project root)
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-VULTURE_DIR="$( cd "$SCRIPT_DIR/../.." && pwd )"
 
-# Change to vulture directory (project root)
-cd "$VULTURE_DIR"
+# Change to project root
+cd "$SCRIPT_DIR"
 
 # Check if Docker is running
 if ! docker info &> /dev/null; then

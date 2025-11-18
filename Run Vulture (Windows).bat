@@ -1,12 +1,11 @@
 @echo off
 REM Double-clickable script to run Vulture Docker container on Windows
 
-REM Get the directory where this script is located
+REM Get the directory where this script is located (project root)
 set "SCRIPT_DIR=%~dp0"
-set "VULTURE_DIR=%SCRIPT_DIR%..\.."
 
-REM Change to vulture directory (project root)
-cd /d "%VULTURE_DIR%"
+REM Change to project root
+cd /d "%SCRIPT_DIR%"
 
 REM Check if Docker is running
 docker info >nul 2>&1
