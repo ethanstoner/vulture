@@ -54,32 +54,11 @@ if errorlevel 1 (
 )
 
 :run
-REM Create directories if they don't exist
-if not exist "input" mkdir input
-if not exist "output" mkdir output
-if not exist "mappings" mkdir mappings
-if not exist "tools" mkdir tools
-
 echo Starting Docker container...
 echo.
 
-REM Check if there are any JAR files in input directory
-dir /b input\*.jar >nul 2>&1
-if errorlevel 1 (
-    echo ⚠ No JAR files found in .\input\ directory
-    echo.
-    echo Please place JAR files in .\input\ and run this script again.
-    echo.
-    pause
-    exit /b 0
-)
-
-    echo Found JAR file(s) in input directory
-    echo Starting interactive processing...
-    echo.
-
-    REM Run container with interactive processing script
-    docker compose -f _internal/docker/docker-compose.yml run --rm -it vulture bash /workspace/process_all.sh
+REM Run container with interactive processing script
+docker compose -f _internal/docker/docker-compose.yml run --rm -it vulture bash /workspace/process_all.sh
 
 REM Keep window open so user can see output
 echo.
