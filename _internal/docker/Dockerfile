@@ -41,8 +41,8 @@ RUN wget -q https://github.com/md-5/SpecialSource/releases/download/1.11.0/Speci
     wget -q https://repo.md-5.net/content/repositories/releases/net/md-5/SpecialSource/1.11.0/SpecialSource-1.11.0-shaded.jar -O /workspace/tools/specialsource.jar || \
     echo "SpecialSource download failed, will use text-based mappings only" || true
 
-# Copy Python scripts from src directory
-COPY src/mod_analyzer.py src/mod_deobfuscator.py ./
+# Copy Python scripts from _internal/src directory
+COPY _internal/src/mod_analyzer.py _internal/src/mod_deobfuscator.py ./
 
 # Set environment variables
 ENV JAVA_HOME=/opt/java/openjdk
