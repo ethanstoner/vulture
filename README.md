@@ -104,19 +104,19 @@ python src\mod_deobfuscator.py input\your_mod.jar --output output\mod_name
 │   └── README.md
 ├── output/                         # Decompiled code output
 │   └── README.md
-├── mappings/                       # MCP/ProGuard mapping files
-│   └── README.md
-├── tools/                          # Custom decompiler tools (optional)
-│   └── README.md
 ├── _internal/                      # Backend files (hidden from users)
 │   ├── docker/                     # Docker configuration
 │   │   ├── Dockerfile
 │   │   ├── docker-compose.yml
 │   │   └── .dockerignore
-│   └── src/                        # Source code
-│       ├── mod_analyzer.py
-│       ├── mod_deobfuscator.py
-│       └── process_all.sh
+│   ├── src/                        # Source code
+│   │   ├── mod_analyzer.py
+│   │   ├── mod_deobfuscator.py
+│   │   └── process_all.sh
+│   ├── mappings/                   # MCP/ProGuard mapping files
+│   │   └── README.md
+│   └── tools/                      # Custom decompiler tools (optional)
+│       └── README.md
 ├── requirements.txt                # Python dependencies
 ├── LICENSE                         # License file
 ├── README.md                       # This file

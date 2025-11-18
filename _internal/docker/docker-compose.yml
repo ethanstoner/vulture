@@ -10,7 +10,7 @@ services:
       # Mount output directory for results
       - ../../output:/workspace/output
       # Mount mappings directory
-      - ../../mappings:/workspace/mappings:ro
+      - ../mappings:/workspace/mappings:ro
       # Mount processing script
       - ../src/process_all.sh:/workspace/process_all.sh:ro
       # Note: tools are built into the image, not mounted

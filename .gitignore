@@ -4,10 +4,10 @@ input/*
 !input/README.md
 output/*
 !output/README.md
-mappings/*
-!mappings/README.md
-tools/*
-!tools/README.md
+_internal/mappings/*
+!_internal/mappings/README.md
+_internal/tools/*
+!_internal/tools/README.md
 
 # Python
 __pycache__/
