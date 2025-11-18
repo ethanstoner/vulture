@@ -34,8 +34,6 @@ REM Auto-install: Create directories if they don't exist
 echo Setting up Vulture...
 if not exist "input" mkdir input
 if not exist "output" mkdir output
-if not exist "_internal\mappings" mkdir _internal\mappings
-if not exist "_internal\tools" mkdir _internal\tools
 echo ✓ Directories ready
 echo.
 

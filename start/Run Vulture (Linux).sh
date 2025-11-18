@@ -34,7 +34,7 @@ fi
 
 # Auto-install: Create directories if they don't exist
 echo "Setting up Vulture..."
-mkdir -p input output _internal/mappings _internal/tools
+mkdir -p input output
 echo "✓ Directories ready"
 echo ""
 

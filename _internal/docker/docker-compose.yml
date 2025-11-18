@@ -9,11 +9,9 @@ services:
       - ../../input:/workspace/input:ro
       # Mount output directory for results
       - ../../output:/workspace/output
-      # Mount mappings directory
-      - ../mappings:/workspace/mappings:ro
       # Mount processing script
       - ../src/process_all.sh:/workspace/process_all.sh:ro
-      # Note: tools are built into the image, not mounted
+      # Note: mappings and tools are optional - create directories if needed
     working_dir: /workspace
     environment:
       - PYTHONUNBUFFERED=1

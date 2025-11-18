@@ -34,13 +34,15 @@ for jar in "${JAR_FILES[@]}"; do
 done
 echo ""
 
-# Check for mappings
-MAPPING_FILES=("$MAPPINGS_DIR"/*.srg "$MAPPINGS_DIR"/*.tsrg "$MAPPINGS_DIR"/*.txt)
+# Check for mappings (optional - create _internal/mappings/ if you have mapping files)
 MAPPINGS_FILE=""
-if [ -e "${MAPPING_FILES[0]}" ]; then
-    MAPPINGS_FILE="${MAPPING_FILES[0]}"
-    echo "Found mapping file: $(basename "$MAPPINGS_FILE")"
-    echo ""
+if [ -d "$MAPPINGS_DIR" ]; then
+    MAPPING_FILES=("$MAPPINGS_DIR"/*.srg "$MAPPINGS_DIR"/*.tsrg "$MAPPINGS_DIR"/*.txt)
+    if [ -e "${MAPPING_FILES[0]}" ]; then
+        MAPPINGS_FILE="${MAPPING_FILES[0]}"
+        echo "Found mapping file: $(basename "$MAPPINGS_FILE")"
+        echo ""
+    fi
 fi
 
 # Process each JAR file
