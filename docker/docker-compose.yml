@@ -1,0 +1,24 @@
+services:
+  vulture:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: vulture-mod-decompiler
+    volumes:
+      # Mount input directory for JAR files
+      - ../input:/workspace/input:ro
+      # Mount output directory for results
+      - ../output:/workspace/output
+      # Mount mappings directory
+      - ../mappings:/workspace/mappings:ro
+      # Mount processing script
+      - ../src/process_all.sh:/workspace/process_all.sh:ro
+      # Note: tools are built into the image, not mounted
+    working_dir: /workspace
+    environment:
+      - PYTHONUNBUFFERED=1
+      - JAVA_HOME=/opt/java/openjdk
+    stdin_open: true
+    tty: true
+    command: /bin/bash
+

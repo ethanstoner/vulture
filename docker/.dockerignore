@@ -1,0 +1,22 @@
+# Ignore these files in Docker build context
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info
+dist/
+build/
+.git/
+.gitignore
+*.md
+.DS_Store
+input/
+output/
+mappings/
+tools/
+.docker_built
+

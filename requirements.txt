@@ -1,0 +1,15 @@
+# Python dependencies for Minecraft mod analysis tools
+# Install in virtual environment: pip install -r requirements.txt
+
+# HTTP requests for downloading mappings
+requests>=2.31.0
+
+# File handling and utilities
+pathlib2>=2.3.7; python_version < '3.4'
+
+# Optional: For advanced bytecode analysis
+# pyjavap>=0.1.0  # Java bytecode parser (if needed)
+
+# Optional: For GUI tools
+# tkinter is usually included with Python
+
