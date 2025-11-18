@@ -101,9 +101,7 @@ python src\mod_deobfuscator.py input\your_mod.jar --output output\mod_name
 │   ├── Run Vulture (Windows).bat
 │   └── Run Vulture (Linux).sh
 ├── input/                          # Place JAR files here
-│   └── README.md
 ├── output/                         # Decompiled code output
-│   └── README.md
 ├── _internal/                      # Backend files (hidden from users)
 │   ├── docker/                     # Docker configuration
 │   │   ├── Dockerfile
@@ -114,13 +112,10 @@ python src\mod_deobfuscator.py input\your_mod.jar --output output\mod_name
 │   │   ├── mod_deobfuscator.py
 │   │   └── process_all.sh
 │   ├── mappings/                   # MCP/ProGuard mapping files
-│   │   └── README.md
 │   └── tools/                      # Custom decompiler tools (optional)
-│       └── README.md
 ├── requirements.txt                # Python dependencies
 ├── LICENSE                         # License file
-├── README.md                       # This file
-└── .gitignore                      # Git ignore rules
+└── README.md                       # This file
 ```
 
 ## Usage
