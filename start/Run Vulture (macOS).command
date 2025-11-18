@@ -53,25 +53,8 @@ mkdir -p input output mappings tools
 echo "Starting Docker container..."
 echo ""
 
-# Check if there are any JAR files in input directory
-JAR_COUNT=$(find input -name "*.jar" 2>/dev/null | wc -l | tr -d ' ')
-
-if [ "$JAR_COUNT" -eq 0 ]; then
-    echo "⚠ No JAR files found in ./input/ directory"
-    echo ""
-    echo "Please place JAR files in ./input/ and run this script again."
-    echo ""
-    echo "Press any key to close this window..."
-    read -n 1 -s
-    exit 0
-fi
-
-echo "Found $JAR_COUNT JAR file(s) in input directory"
-echo "Starting automatic processing..."
-echo ""
-
-# Run container with auto-processing script
-docker compose -f _internal/docker/docker-compose.yml run --rm vulture bash /workspace/process_all.sh
+# Run container with interactive processing script
+docker compose -f _internal/docker/docker-compose.yml run --rm -it vulture bash /workspace/process_all.sh
 
 # Keep terminal open so user can see output
 echo ""
