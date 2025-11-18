@@ -7,6 +7,7 @@ A comprehensive toolkit for analyzing, decompiling, and deobfuscating Minecraft 
 - **Static Analysis**: Analyze mod JAR files without execution
 - **Decompilation**: Convert compiled bytecode back to readable Java source
 - **Deobfuscation**: Apply MCP/ProGuard mappings to restore readable names
+- **Recompilation**: Compile decompiled Java source back into JAR files
 - **Security Detection**: Automatically identify suspicious patterns (webhooks, token access, network code)
 - **Isolated Execution**: All tools run in Docker containers for safety
 - **Multiple Decompilers**: Support for CFR, JD-CLI, and Fernflower
@@ -39,9 +40,9 @@ A comprehensive toolkit for analyzing, decompiling, and deobfuscating Minecraft 
 
 The script will automatically:
 1. Build the Docker image (if needed)
-2. Analyze all JAR files in `input/`
-3. Decompile and deobfuscate (if mappings are available)
-4. Save all results to `output/`
+2. Decompile all JAR files in `input/` → saves to `decompiled/`
+3. Compile decompiled source back to JAR → saves to `compiled/`
+4. Optionally deobfuscate (if mappings are available in `_internal/mappings/`)
 
 ### Manual Docker Usage
 
@@ -101,7 +102,8 @@ python src\mod_deobfuscator.py input\your_mod.jar --output output\mod_name
 │   ├── Run Vulture (Windows).bat
 │   └── Run Vulture (Linux).sh
 ├── input/                          # Place JAR files here
-├── output/                         # Decompiled code output
+├── decompiled/                     # Decompiled Java source code
+├── compiled/                        # Recompiled JAR files
 ├── _internal/                      # Backend files (hidden from users)
 │   ├── docker/                     # Docker configuration
 │   │   ├── Dockerfile
@@ -110,6 +112,7 @@ python src\mod_deobfuscator.py input\your_mod.jar --output output\mod_name
 │   └── src/                        # Source code
 │       ├── mod_analyzer.py
 │       ├── mod_deobfuscator.py
+│       ├── mod_compiler.py
 │       └── process_all.sh
 ├── requirements.txt                # Python dependencies
 ├── LICENSE                         # License file
@@ -142,22 +145,37 @@ Decompiles and optionally deobfuscates mods:
 
 ```bash
 # Basic decompilation (inside Docker container)
-docker compose run --rm vulture python3 /workspace/mod_deobfuscator.py input/mod.jar --output output/mod_name
+docker compose run --rm vulture python3 /workspace/mod_deobfuscator.py input/mod.jar --output decompiled/mod_name
 
 # With MCP mappings (deobfuscation)
-docker compose run --rm vulture python3 /workspace/mod_deobfuscator.py input/mod.jar mappings/joined.srg --output output/mod_name
-
-# Full analysis after deobfuscation
-docker compose run --rm vulture python3 /workspace/mod_deobfuscator.py input/mod.jar mappings/joined.srg --output output/mod_name --analyze
+docker compose run --rm vulture python3 /workspace/mod_deobfuscator.py input/mod.jar mappings/joined.srg --output decompiled/mod_name
 
 # Choose specific decompiler
-docker compose run --rm vulture python3 /workspace/mod_deobfuscator.py input/mod.jar --decompiler jd-cli --output output/mod_name
+docker compose run --rm vulture python3 /workspace/mod_deobfuscator.py input/mod.jar --decompiler jd-cli --output decompiled/mod_name
 ```
 
 **Supported Decompilers:**
 - **CFR** (default): Best accuracy, handles modern Java features
 - **JD-CLI**: Fast, good for quick inspection
 - **Fernflower**: IntelliJ-style output (requires manual download)
+
+### Mod Compiler
+
+Compiles decompiled Java source code back into JAR files:
+
+```bash
+# Compile decompiled source to JAR (inside Docker container)
+docker compose run --rm vulture python3 /workspace/mod_compiler.py decompiled/mod_name compiled/mod_name_recompiled.jar
+
+# With classpath for dependencies
+docker compose run --rm vulture python3 /workspace/mod_compiler.py decompiled/mod_name compiled/mod_name_recompiled.jar -cp libs/*
+```
+
+The compiler:
+- Compiles all Java files in the source directory
+- Creates a JAR file with proper structure
+- Includes resources and manifest
+- Outputs ready-to-use JAR files for Minecraft
 
 ## Obtaining Mappings
 

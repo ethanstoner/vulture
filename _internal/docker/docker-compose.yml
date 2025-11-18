@@ -7,8 +7,10 @@ services:
     volumes:
       # Mount input directory for JAR files
       - ../../input:/workspace/input:ro
-      # Mount output directory for results
-      - ../../output:/workspace/output
+      # Mount decompiled directory for source code
+      - ../../decompiled:/workspace/decompiled
+      # Mount compiled directory for recompiled JARs
+      - ../../compiled:/workspace/compiled
       # Mount processing script
       - ../src/process_all.sh:/workspace/process_all.sh:ro
       # Note: mappings and tools are optional - create directories if needed

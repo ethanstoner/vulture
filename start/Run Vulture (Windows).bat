@@ -33,7 +33,8 @@ if errorlevel 1 (
 REM Auto-install: Create directories if they don't exist
 echo Setting up Vulture...
 if not exist "input" mkdir input
-if not exist "output" mkdir output
+if not exist "decompiled" mkdir decompiled
+if not exist "compiled" mkdir compiled
 echo ✓ Directories ready
 echo.
 

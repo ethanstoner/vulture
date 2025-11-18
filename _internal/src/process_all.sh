@@ -5,7 +5,8 @@
 set +e
 
 INPUT_DIR="/workspace/input"
-OUTPUT_DIR="/workspace/output"
+DECOMPILED_DIR="/workspace/decompiled"
+COMPILED_DIR="/workspace/compiled"
 MAPPINGS_DIR="/workspace/mappings"
 
 echo "=========================================="
@@ -53,27 +54,43 @@ for jar_file in "${JAR_FILES[@]}"; do
     echo "=========================================="
     echo ""
     
-    # Decompile and deobfuscate
-    echo "Decompiling and deobfuscating..."
+    # Step 1: Decompile and deobfuscate
+    echo "Step 1: Decompiling and deobfuscating..."
     echo "-----------------------------------"
-    OUTPUT_PATH="$OUTPUT_DIR/$JAR_NAME"
+    DECOMPILED_PATH="$DECOMPILED_DIR/$JAR_NAME"
     
     if [ -n "$MAPPINGS_FILE" ]; then
         echo "Using mappings: $(basename "$MAPPINGS_FILE")"
         python3 /workspace/mod_deobfuscator.py "$jar_file" "$MAPPINGS_FILE" \
-            --output "$OUTPUT_PATH" || {
+            --output "$DECOMPILED_PATH" || {
             echo "Warning: Deobfuscation failed for $JAR_NAME, trying without mappings..."
             python3 /workspace/mod_deobfuscator.py "$jar_file" \
-                --output "$OUTPUT_PATH" || {
+                --output "$DECOMPILED_PATH" || {
                 echo "Error: Decompilation failed for $JAR_NAME"
+                continue
             }
         }
     else
         echo "No mappings found, decompiling without deobfuscation..."
         python3 /workspace/mod_deobfuscator.py "$jar_file" \
-            --output "$OUTPUT_PATH" || {
+            --output "$DECOMPILED_PATH" || {
             echo "Error: Decompilation failed for $JAR_NAME"
+            continue
         }
+    fi
+    echo ""
+    
+    # Step 2: Compile back to JAR
+    echo "Step 2: Compiling back to JAR..."
+    echo "-----------------------------------"
+    COMPILED_JAR="$COMPILED_DIR/${JAR_NAME}_recompiled.jar"
+    
+    if [ -d "$DECOMPILED_PATH" ]; then
+        python3 /workspace/mod_compiler.py "$DECOMPILED_PATH" "$COMPILED_JAR" || {
+            echo "Warning: Compilation failed for $JAR_NAME"
+        }
+    else
+        echo "Warning: Decompiled directory not found, skipping compilation"
     fi
     echo ""
     
@@ -84,6 +101,7 @@ done
 echo "=========================================="
 echo "All files processed!"
 echo "=========================================="
-echo "Results are in: $OUTPUT_DIR"
+echo "Decompiled source code: $DECOMPILED_DIR"
+echo "Recompiled JAR files: $COMPILED_DIR"
 echo ""
 

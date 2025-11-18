@@ -34,7 +34,7 @@ fi
 
 # Auto-install: Create directories if they don't exist
 echo "Setting up Vulture..."
-mkdir -p input output
+mkdir -p input decompiled compiled
 echo "✓ Directories ready"
 echo ""
 
