@@ -6,11 +6,11 @@ services:
     container_name: vulture-mod-decompiler
     volumes:
       # Mount input directory for JAR files
-      - ../input:/workspace/input:ro
+      - ../../input:/workspace/input:ro
       # Mount output directory for results
-      - ../output:/workspace/output
+      - ../../output:/workspace/output
       # Mount mappings directory
-      - ../mappings:/workspace/mappings:ro
+      - ../../mappings:/workspace/mappings:ro
       # Mount processing script
       - ../src/process_all.sh:/workspace/process_all.sh:ro
       # Note: tools are built into the image, not mounted
