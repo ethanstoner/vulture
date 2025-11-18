@@ -1,11 +1,23 @@
 @echo off
 REM Double-clickable script to run Vulture Docker container on Windows
+REM Automatically installs/setups on first run
 
 REM Get the directory where this script is located (project root)
 set "SCRIPT_DIR=%~dp0"
 
 REM Change to project root
 cd /d "%SCRIPT_DIR%"
+
+REM Check if Docker is installed
+docker --version >nul 2>&1
+if errorlevel 1 (
+    echo Error: Docker is not installed.
+    echo.
+    echo Please install Docker Desktop from: https://www.docker.com/products/docker-desktop
+    echo.
+    pause
+    exit /b 1
+)
 
 REM Check if Docker is running
 docker info >nul 2>&1
@@ -15,6 +27,15 @@ if errorlevel 1 (
     pause
     exit /b 1
 )
+
+REM Auto-install: Create directories if they don't exist
+echo Setting up Vulture...
+if not exist "input" mkdir input
+if not exist "output" mkdir output
+if not exist "mappings" mkdir mappings
+if not exist "tools" mkdir tools
+echo ✓ Directories ready
+echo.
 
 REM Build if build flag is passed
 if "%1"=="build" (

@@ -99,13 +99,6 @@ python src\mod_deobfuscator.py input\your_mod.jar --output output\mod_name
 ├── Run Vulture (macOS).command    # Start Vulture on macOS (double-click)
 ├── Run Vulture (Windows).bat      # Start Vulture on Windows (double-click)
 ├── Run Vulture (Linux).sh         # Start Vulture on Linux
-├── scripts/                        # Setup scripts (less frequently used)
-│   ├── macos/
-│   │   └── Install Vulture.command
-│   ├── windows/
-│   │   └── Install Vulture.bat
-│   └── linux/
-│       └── Install Vulture.sh
 ├── docker/                         # Docker configuration (internal)
 │   ├── Dockerfile
 │   ├── docker-compose.yml

@@ -1,5 +1,6 @@
 #!/bin/bash
 # Double-clickable script to run Vulture Docker container on macOS
+# Automatically installs/setups on first run
 
 set -e
 
@@ -9,6 +10,17 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 # Change to project root
 cd "$SCRIPT_DIR"
 
+# Check if Docker is installed
+if ! command -v docker &> /dev/null; then
+    echo "Error: Docker is not installed."
+    echo ""
+    echo "Please install Docker Desktop from: https://www.docker.com/products/docker-desktop"
+    echo ""
+    echo "Press any key to close this window..."
+    read -n 1 -s
+    exit 1
+fi
+
 # Check if Docker is running
 if ! docker info &> /dev/null; then
     echo "Error: Docker is not running. Please start Docker Desktop first."
@@ -17,6 +29,12 @@ if ! docker info &> /dev/null; then
     read -n 1 -s
     exit 1
 fi
+
+# Auto-install: Create directories if they don't exist
+echo "Setting up Vulture..."
+mkdir -p input output mappings tools
+echo "✓ Directories ready"
+echo ""
 
 # Build if needed or if build flag is passed
 if [ "$1" = "build" ]; then
