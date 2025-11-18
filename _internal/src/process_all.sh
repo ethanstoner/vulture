@@ -125,55 +125,81 @@ fi
 
 # COMPILE OPERATION
 if [ "$OPERATION" = "compile" ] || [ "$OPERATION" = "both" ]; then
-    echo "=========================================="
-    echo "COMPILING JAVA SOURCE"
-    echo "=========================================="
-    echo ""
-    
-    # Check if input directory exists and has source directories
-    if [ ! -d "$INPUT_COMPILE_DIR" ]; then
-        echo "Error: Input directory not found: $INPUT_COMPILE_DIR"
-        exit 1
-    fi
-    
-    # Find all directories (each is a mod's source code)
-    SOURCE_DIRS=("$INPUT_COMPILE_DIR"/*)
-    
-    if [ ! -e "${SOURCE_DIRS[0]}" ]; then
-        echo "⚠ No source directories found in $INPUT_COMPILE_DIR"
-        echo "Please place decompiled source code in input/to_be_compiled/"
-    else
-        echo "Found source directory(ies) to compile:"
-        for dir in "${SOURCE_DIRS[@]}"; do
-            if [ -d "$dir" ]; then
-                echo "  - $(basename "$dir")"
-            fi
-        done
+        echo "=========================================="
+        echo "COMPILING JAVA SOURCE"
+        echo "=========================================="
         echo ""
         
-        # Process each source directory
-        for source_dir in "${SOURCE_DIRS[@]}"; do
-            if [ ! -d "$source_dir" ]; then
-                continue
-            fi
-            
-            MOD_NAME=$(basename "$source_dir")
-            echo "=========================================="
-            echo "Compiling: $MOD_NAME"
-            echo "=========================================="
+        # Check if input directory exists and has source directories
+        if [ ! -d "$INPUT_COMPILE_DIR" ]; then
+            echo "Error: Input directory not found: $INPUT_COMPILE_DIR"
+            exit 1
+        fi
+        
+        # Find all directories (each is a mod's source code)
+        SOURCE_DIRS=("$INPUT_COMPILE_DIR"/*)
+        
+        if [ ! -e "${SOURCE_DIRS[0]}" ]; then
+            echo "⚠ No source directories found in $INPUT_COMPILE_DIR"
+            echo "Please place decompiled source code in input/to_be_compiled/"
+        else
+            echo "Found source directory(ies) to compile:"
+            for dir in "${SOURCE_DIRS[@]}"; do
+                if [ -d "$dir" ]; then
+                    echo "  - $(basename "$dir")"
+                fi
+            done
             echo ""
             
-            COMPILED_JAR="$OUTPUT_COMPILED_DIR/${MOD_NAME}_recompiled.jar"
-            
-            python3 /workspace/mod_compiler.py "$source_dir" "$COMPILED_JAR" || {
-                echo "Warning: Compilation failed for $MOD_NAME"
-                continue
-            }
-            echo ""
-            
-            echo "✓ Compiled: $MOD_NAME"
-            echo ""
-        done
+            # Process each source directory
+            for source_dir in "${SOURCE_DIRS[@]}"; do
+                if [ ! -d "$source_dir" ]; then
+                    continue
+                fi
+                
+                MOD_NAME=$(basename "$source_dir")
+                echo "=========================================="
+                echo "Compiling: $MOD_NAME"
+                echo "=========================================="
+                echo ""
+                
+                COMPILED_JAR="$OUTPUT_COMPILED_DIR/${MOD_NAME}_recompiled.jar"
+                
+                # Try to find original JAR in decompiled input directory
+                ORIGINAL_JAR=""
+                if [ -d "$INPUT_DECOMPILE_DIR" ]; then
+                    # Try exact match first
+                    ORIGINAL_JAR=$(find "$INPUT_DECOMPILE_DIR" -name "${MOD_NAME}.jar" 2>/dev/null | head -1)
+                    # If not found, try without version suffix
+                    if [ -z "$ORIGINAL_JAR" ]; then
+                        BASE_NAME=$(echo "$MOD_NAME" | sed 's/-[0-9].*$//')
+                        ORIGINAL_JAR=$(find "$INPUT_DECOMPILE_DIR" -name "${BASE_NAME}*.jar" 2>/dev/null | head -1)
+                    fi
+                    # If still not found, try any JAR that might match
+                    if [ -z "$ORIGINAL_JAR" ]; then
+                        ORIGINAL_JAR=$(find "$INPUT_DECOMPILE_DIR" -name "*.jar" 2>/dev/null | head -1)
+                    fi
+                fi
+                
+                if [ -n "$ORIGINAL_JAR" ] && [ -f "$ORIGINAL_JAR" ]; then
+                    echo "Found original JAR: $(basename "$ORIGINAL_JAR")"
+                    echo "Using it as classpath for compilation..."
+                    python3 /workspace/mod_compiler.py "$source_dir" "$COMPILED_JAR" --original-jar "$ORIGINAL_JAR" || {
+                        echo "Warning: Compilation failed for $MOD_NAME"
+                        continue
+                    }
+                else
+                    echo "No original JAR found, compiling without dependencies..."
+                    python3 /workspace/mod_compiler.py "$source_dir" "$COMPILED_JAR" || {
+                        echo "Warning: Compilation failed for $MOD_NAME"
+                        continue
+                    }
+                fi
+                echo ""
+                
+                echo "✓ Compiled: $MOD_NAME"
+                echo ""
+            done
         
         echo "=========================================="
         echo "Compilation complete!"
