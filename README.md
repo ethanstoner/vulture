@@ -29,13 +29,13 @@ A comprehensive toolkit for analyzing, decompiling, and deobfuscating Minecraft 
 **Simply place your JAR files in the `input/` directory and run the platform-specific script:**
 
 **macOS:**
-- Double-click `Run Vulture (macOS).command`
+- Double-click `start/Run Vulture (macOS).command`
 
 **Windows:**
-- Double-click `Run Vulture (Windows).bat`
+- Double-click `start/Run Vulture (Windows).bat`
 
 **Linux:**
-- Run: `bash Run\ Vulture\ \(Linux\).sh`
+- Run: `bash start/Run\ Vulture\ \(Linux\).sh`
 
 The script will automatically:
 1. Build the Docker image (if needed)
@@ -96,25 +96,31 @@ python src\mod_deobfuscator.py input\your_mod.jar --output output\mod_name
 
 ```
 .
-├── Run Vulture (macOS).command    # Start Vulture on macOS (double-click)
-├── Run Vulture (Windows).bat      # Start Vulture on Windows (double-click)
-├── Run Vulture (Linux).sh         # Start Vulture on Linux
-├── docker/                         # Docker configuration (internal)
-│   ├── Dockerfile
-│   ├── docker-compose.yml
-│   └── .dockerignore
-├── src/                            # Source code (internal)
-│   ├── mod_analyzer.py
-│   ├── mod_deobfuscator.py
-│   └── process_all.sh
+├── start/                          # Launcher scripts (double-click to run!)
+│   ├── Run Vulture (macOS).command
+│   ├── Run Vulture (Windows).bat
+│   └── Run Vulture (Linux).sh
+├── input/                          # Place JAR files here
+│   └── README.md
+├── output/                         # Decompiled code output
+│   └── README.md
+├── mappings/                       # MCP/ProGuard mapping files
+│   └── README.md
+├── tools/                          # Custom decompiler tools (optional)
+│   └── README.md
+├── _internal/                      # Backend files (hidden from users)
+│   ├── docker/                     # Docker configuration
+│   │   ├── Dockerfile
+│   │   ├── docker-compose.yml
+│   │   └── .dockerignore
+│   └── src/                        # Source code
+│       ├── mod_analyzer.py
+│       ├── mod_deobfuscator.py
+│       └── process_all.sh
 ├── requirements.txt                # Python dependencies
 ├── LICENSE                         # License file
 ├── README.md                       # This file
-├── .gitignore                      # Git ignore rules
-├── input/                          # Place JAR files here
-├── output/                         # Decompiled code output
-├── mappings/                       # MCP/ProGuard mapping files
-└── tools/                          # Custom decompiler tools (optional)
+└── .gitignore                      # Git ignore rules
 ```
 
 ## Usage

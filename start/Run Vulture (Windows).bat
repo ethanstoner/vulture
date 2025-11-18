@@ -2,11 +2,13 @@
 REM Double-clickable script to run Vulture Docker container on Windows
 REM Automatically installs/setups on first run
 
-REM Get the directory where this script is located (project root)
+REM Get the directory where this script is located
 set "SCRIPT_DIR=%~dp0"
+REM Get project root (one level up from start\)
+set "PROJECT_ROOT=%SCRIPT_DIR%.."
 
 REM Change to project root
-cd /d "%SCRIPT_DIR%"
+cd /d "%PROJECT_ROOT%"
 
 REM Check if Docker is installed
 docker --version >nul 2>&1
@@ -40,15 +42,15 @@ echo.
 REM Build if build flag is passed
 if "%1"=="build" (
     echo Building Docker image...
-    docker compose -f docker/docker-compose.yml build
+    docker compose -f _internal/docker/docker-compose.yml build
     goto :run
 )
 
 REM Check if image exists (simplified check)
-docker compose -f docker/docker-compose.yml images | findstr /C:"vulture-mod-decompiler" >nul 2>&1
+docker compose -f _internal/docker/docker-compose.yml images | findstr /C:"vulture-mod-decompiler" >nul 2>&1
 if errorlevel 1 (
     echo Docker image not found. Building...
-    docker compose -f docker/docker-compose.yml build
+    docker compose -f _internal/docker/docker-compose.yml build
 )
 
 :run
@@ -77,7 +79,7 @@ echo Starting automatic processing...
 echo.
 
 REM Run container with auto-processing script
-docker compose -f docker/docker-compose.yml run --rm vulture bash /workspace/process_all.sh
+docker compose -f _internal/docker/docker-compose.yml run --rm vulture bash /workspace/process_all.sh
 
 REM Keep window open so user can see output
 echo.

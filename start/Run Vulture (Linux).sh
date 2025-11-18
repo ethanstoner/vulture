@@ -4,11 +4,13 @@
 
 set -e
 
-# Get the directory where this script is located (project root)
+# Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+# Get project root (one level up from start/)
+PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
 
 # Change to project root
-cd "$SCRIPT_DIR"
+cd "$PROJECT_ROOT"
 
 # Check if Docker is installed
 if ! command -v docker &> /dev/null; then
@@ -39,10 +41,10 @@ echo ""
 # Build if needed or if build flag is passed
 if [ "$1" = "build" ]; then
     echo "Building Docker image..."
-    docker compose -f docker/docker-compose.yml build
-elif ! docker compose -f docker/docker-compose.yml images | grep -q vulture-mod-decompiler; then
+    docker compose -f _internal/docker/docker-compose.yml build
+elif ! docker compose -f _internal/docker/docker-compose.yml images | grep -q vulture-mod-decompiler; then
     echo "Docker image not found. Building..."
-    docker compose -f docker/docker-compose.yml build
+    docker compose -f _internal/docker/docker-compose.yml build
 fi
 
 # Create directories if they don't exist
@@ -58,7 +60,7 @@ if [ "$JAR_COUNT" -eq 0 ]; then
     echo "⚠ No JAR files found in ./input/ directory"
     echo ""
     echo "Please place JAR files in ./input/ and run this script again."
-    echo "Or run interactively with: docker compose -f docker/docker-compose.yml run --rm vulture"
+    echo "Or run interactively with: docker compose -f _internal/docker/docker-compose.yml run --rm vulture"
     exit 0
 fi
 
@@ -67,5 +69,5 @@ echo "Starting automatic processing..."
 echo ""
 
 # Run container with auto-processing script
-docker compose -f docker/docker-compose.yml run --rm vulture bash /workspace/process_all.sh
+docker compose -f _internal/docker/docker-compose.yml run --rm vulture bash /workspace/process_all.sh
 
