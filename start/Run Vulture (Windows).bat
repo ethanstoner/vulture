@@ -74,12 +74,12 @@ if errorlevel 1 (
     exit /b 0
 )
 
-echo Found JAR file(s) in input directory
-echo Starting automatic processing...
-echo.
+    echo Found JAR file(s) in input directory
+    echo Starting interactive processing...
+    echo.
 
-REM Run container with auto-processing script
-docker compose -f _internal/docker/docker-compose.yml run --rm vulture bash /workspace/process_all.sh
+    REM Run container with interactive processing script
+    docker compose -f _internal/docker/docker-compose.yml run --rm -it vulture bash /workspace/process_all.sh
 
 REM Keep window open so user can see output
 echo.
