@@ -1,5 +1,6 @@
 # Dockerfile for Vulture - Minecraft Mod Decompilation/Deobfuscation Environment
-FROM eclipse-temurin:8-jdk
+# Using Java 17 for modern mod support (records, pattern matching, etc.)
+FROM eclipse-temurin:17-jdk
 
 # Install Python 3 and pip
 RUN apt-get update && apt-get install -y \

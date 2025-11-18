@@ -33,8 +33,10 @@ class ModCompiler:
         """
         print(f"\nCompiling Java source from: {self.source_dir}")
         
-        # Create temporary directory for compiled classes
-        self.classes_dir = self.source_dir.parent / f"{self.source_dir.name}_classes"
+        # Create temporary directory for compiled classes (use /tmp for writability)
+        import tempfile
+        temp_base = Path("/tmp") if Path("/tmp").exists() else Path(self.source_dir.parent)
+        self.classes_dir = temp_base / f"{self.source_dir.name}_classes_{os.getpid()}"
         if self.classes_dir.exists():
             shutil.rmtree(self.classes_dir)
         self.classes_dir.mkdir(parents=True, exist_ok=True)
@@ -48,12 +50,12 @@ class ModCompiler:
         
         print(f"Found {len(java_files)} Java file(s) to compile...")
         
-        # Build javac command
+        # Build javac command (use Java 17 for modern features)
         javac_cmd = [
             "javac",
             "-d", str(self.classes_dir),
-            "-source", "8",
-            "-target", "8",
+            "-source", "17",
+            "-target", "17",
             "-encoding", "UTF-8"
         ]
         
