@@ -1,38 +1,46 @@
 #!/bin/bash
-# Auto-process all JAR files in the input directory
+# Auto-process JAR files - decompile or compile based on user choice
 
 # Don't exit on error - we want to continue processing other files
 set +e
 
-INPUT_DIR="/workspace/input"
-DECOMPILED_DIR="/workspace/decompiled"
-COMPILED_DIR="/workspace/compiled"
+INPUT_DECOMPILE_DIR="/workspace/input/to_be_decompiled"
+INPUT_COMPILE_DIR="/workspace/input/to_be_compiled"
+OUTPUT_DECOMPILED_DIR="/workspace/output/decompiled"
+OUTPUT_COMPILED_DIR="/workspace/output/compiled"
 MAPPINGS_DIR="/workspace/mappings"
 
 echo "=========================================="
-echo "Vulture - Auto-Processing JAR Files"
+echo "Vulture - Mod Processing"
 echo "=========================================="
 echo ""
 
-# Check if input directory exists and has JAR files
-if [ ! -d "$INPUT_DIR" ]; then
-    echo "Error: Input directory not found: $INPUT_DIR"
-    exit 1
-fi
+# Ask user what they want to do
+echo "What would you like to do?"
+echo "  1) Decompile JAR files"
+echo "  2) Compile Java source"
+echo "  3) Both (decompile then compile)"
+echo ""
+read -p "Enter choice (1-3): " choice
 
-# Find all JAR files
-JAR_FILES=("$INPUT_DIR"/*.jar)
+case $choice in
+    1)
+        OPERATION="decompile"
+        ;;
+    2)
+        OPERATION="compile"
+        ;;
+    3)
+        OPERATION="both"
+        ;;
+    *)
+        echo "Invalid choice. Exiting."
+        exit 1
+        ;;
+esac
 
-if [ ! -e "${JAR_FILES[0]}" ]; then
-    echo "No JAR files found in $INPUT_DIR"
-    echo "Please place JAR files in the input/ directory"
-    exit 0
-fi
-
-echo "Found ${#JAR_FILES[@]} JAR file(s) to process:"
-for jar in "${JAR_FILES[@]}"; do
-    echo "  - $(basename "$jar")"
-done
+echo ""
+echo "Selected: $OPERATION"
 echo ""
 
 # Check for mappings (optional - create _internal/mappings/ if you have mapping files)
@@ -46,62 +54,136 @@ if [ -d "$MAPPINGS_DIR" ]; then
     fi
 fi
 
-# Process each JAR file
-for jar_file in "${JAR_FILES[@]}"; do
-    JAR_NAME=$(basename "$jar_file" .jar)
+# DECOMPILE OPERATION
+if [ "$OPERATION" = "decompile" ] || [ "$OPERATION" = "both" ]; then
     echo "=========================================="
-    echo "Processing: $JAR_NAME"
+    echo "DECOMPILING JAR FILES"
     echo "=========================================="
     echo ""
     
-    # Step 1: Decompile and deobfuscate
-    echo "Step 1: Decompiling and deobfuscating..."
-    echo "-----------------------------------"
-    DECOMPILED_PATH="$DECOMPILED_DIR/$JAR_NAME"
+    # Check if input directory exists and has JAR files
+    if [ ! -d "$INPUT_DECOMPILE_DIR" ]; then
+        echo "Error: Input directory not found: $INPUT_DECOMPILE_DIR"
+        exit 1
+    fi
     
-    if [ -n "$MAPPINGS_FILE" ]; then
-        echo "Using mappings: $(basename "$MAPPINGS_FILE")"
-        python3 /workspace/mod_deobfuscator.py "$jar_file" "$MAPPINGS_FILE" \
-            --output "$DECOMPILED_PATH" || {
-            echo "Warning: Deobfuscation failed for $JAR_NAME, trying without mappings..."
-            python3 /workspace/mod_deobfuscator.py "$jar_file" \
-                --output "$DECOMPILED_PATH" || {
-                echo "Error: Decompilation failed for $JAR_NAME"
+    # Find all JAR files
+    JAR_FILES=("$INPUT_DECOMPILE_DIR"/*.jar)
+    
+    if [ ! -e "${JAR_FILES[0]}" ]; then
+        echo "⚠ No JAR files found in $INPUT_DECOMPILE_DIR"
+        echo "Please place JAR files in input/to_be_decompiled/"
+    else
+        echo "Found ${#JAR_FILES[@]} JAR file(s) to decompile:"
+        for jar in "${JAR_FILES[@]}"; do
+            echo "  - $(basename "$jar")"
+        done
+        echo ""
+        
+        # Process each JAR file
+        for jar_file in "${JAR_FILES[@]}"; do
+            JAR_NAME=$(basename "$jar_file" .jar)
+            echo "=========================================="
+            echo "Decompiling: $JAR_NAME"
+            echo "=========================================="
+            echo ""
+            
+            DECOMPILED_PATH="$OUTPUT_DECOMPILED_DIR/$JAR_NAME"
+            
+            if [ -n "$MAPPINGS_FILE" ]; then
+                echo "Using mappings: $(basename "$MAPPINGS_FILE")"
+                python3 /workspace/mod_deobfuscator.py "$jar_file" "$MAPPINGS_FILE" \
+                    --output "$DECOMPILED_PATH" || {
+                    echo "Warning: Deobfuscation failed for $JAR_NAME, trying without mappings..."
+                    python3 /workspace/mod_deobfuscator.py "$jar_file" \
+                        --output "$DECOMPILED_PATH" || {
+                        echo "Error: Decompilation failed for $JAR_NAME"
+                        continue
+                    }
+                }
+            else
+                echo "No mappings found, decompiling without deobfuscation..."
+                python3 /workspace/mod_deobfuscator.py "$jar_file" \
+                    --output "$DECOMPILED_PATH" || {
+                    echo "Error: Decompilation failed for $JAR_NAME"
+                    continue
+                }
+            fi
+            echo ""
+            
+            echo "✓ Decompiled: $JAR_NAME"
+            echo ""
+        done
+        
+        echo "=========================================="
+        echo "Decompilation complete!"
+        echo "Results in: $OUTPUT_DECOMPILED_DIR"
+        echo "=========================================="
+        echo ""
+    fi
+fi
+
+# COMPILE OPERATION
+if [ "$OPERATION" = "compile" ] || [ "$OPERATION" = "both" ]; then
+    echo "=========================================="
+    echo "COMPILING JAVA SOURCE"
+    echo "=========================================="
+    echo ""
+    
+    # Check if input directory exists and has source directories
+    if [ ! -d "$INPUT_COMPILE_DIR" ]; then
+        echo "Error: Input directory not found: $INPUT_COMPILE_DIR"
+        exit 1
+    fi
+    
+    # Find all directories (each is a mod's source code)
+    SOURCE_DIRS=("$INPUT_COMPILE_DIR"/*)
+    
+    if [ ! -e "${SOURCE_DIRS[0]}" ]; then
+        echo "⚠ No source directories found in $INPUT_COMPILE_DIR"
+        echo "Please place decompiled source code in input/to_be_compiled/"
+    else
+        echo "Found source directory(ies) to compile:"
+        for dir in "${SOURCE_DIRS[@]}"; do
+            if [ -d "$dir" ]; then
+                echo "  - $(basename "$dir")"
+            fi
+        done
+        echo ""
+        
+        # Process each source directory
+        for source_dir in "${SOURCE_DIRS[@]}"; do
+            if [ ! -d "$source_dir" ]; then
+                continue
+            fi
+            
+            MOD_NAME=$(basename "$source_dir")
+            echo "=========================================="
+            echo "Compiling: $MOD_NAME"
+            echo "=========================================="
+            echo ""
+            
+            COMPILED_JAR="$OUTPUT_COMPILED_DIR/${MOD_NAME}_recompiled.jar"
+            
+            python3 /workspace/mod_compiler.py "$source_dir" "$COMPILED_JAR" || {
+                echo "Warning: Compilation failed for $MOD_NAME"
                 continue
             }
-        }
-    else
-        echo "No mappings found, decompiling without deobfuscation..."
-        python3 /workspace/mod_deobfuscator.py "$jar_file" \
-            --output "$DECOMPILED_PATH" || {
-            echo "Error: Decompilation failed for $JAR_NAME"
-            continue
-        }
+            echo ""
+            
+            echo "✓ Compiled: $MOD_NAME"
+            echo ""
+        done
+        
+        echo "=========================================="
+        echo "Compilation complete!"
+        echo "Results in: $OUTPUT_COMPILED_DIR"
+        echo "=========================================="
+        echo ""
     fi
-    echo ""
-    
-    # Step 2: Compile back to JAR
-    echo "Step 2: Compiling back to JAR..."
-    echo "-----------------------------------"
-    COMPILED_JAR="$COMPILED_DIR/${JAR_NAME}_recompiled.jar"
-    
-    if [ -d "$DECOMPILED_PATH" ]; then
-        python3 /workspace/mod_compiler.py "$DECOMPILED_PATH" "$COMPILED_JAR" || {
-            echo "Warning: Compilation failed for $JAR_NAME"
-        }
-    else
-        echo "Warning: Decompiled directory not found, skipping compilation"
-    fi
-    echo ""
-    
-    echo "✓ Completed processing: $JAR_NAME"
-    echo ""
-done
+fi
 
 echo "=========================================="
-echo "All files processed!"
+echo "All operations complete!"
 echo "=========================================="
-echo "Decompiled source code: $DECOMPILED_DIR"
-echo "Recompiled JAR files: $COMPILED_DIR"
 echo ""
-

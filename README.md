@@ -38,11 +38,13 @@ A comprehensive toolkit for analyzing, decompiling, and deobfuscating Minecraft 
 **Linux:**
 - Run: `bash start/Run\ Vulture\ \(Linux\).sh`
 
-The script will automatically:
+The script will:
 1. Build the Docker image (if needed)
-2. Decompile all JAR files in `input/` → saves to `decompiled/`
-3. Compile decompiled source back to JAR → saves to `compiled/`
-4. Optionally deobfuscate (if mappings are available in `_internal/mappings/`)
+2. Ask you what to do:
+   - **Decompile**: Process JARs from `input/to_be_decompiled/` → saves to `output/decompiled/`
+   - **Compile**: Process Java source from `input/to_be_compiled/` → saves to `output/compiled/`
+   - **Both**: Decompile then compile in sequence
+3. Optionally deobfuscate (if mappings are available in `_internal/mappings/`)
 
 ### Manual Docker Usage
 
@@ -101,9 +103,12 @@ python src\mod_deobfuscator.py input\your_mod.jar --output output\mod_name
 │   ├── Run Vulture (macOS).command
 │   ├── Run Vulture (Windows).bat
 │   └── Run Vulture (Linux).sh
-├── input/                          # Place JAR files here
-├── decompiled/                     # Decompiled Java source code
-├── compiled/                        # Recompiled JAR files
+├── input/                          # Input directories
+│   ├── to_be_decompiled/           # Place JAR files here to decompile
+│   └── to_be_compiled/             # Place Java source here to compile
+├── output/                         # Output directories
+│   ├── decompiled/                 # Decompiled Java source code
+│   └── compiled/                   # Recompiled JAR files
 ├── _internal/                      # Backend files (hidden from users)
 │   ├── docker/                     # Docker configuration
 │   │   ├── Dockerfile
