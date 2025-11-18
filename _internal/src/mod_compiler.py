@@ -66,29 +66,61 @@ class ModCompiler:
         # Add all Java files
         javac_cmd.extend([str(f) for f in java_files])
         
-        # Compile
-        try:
-            result = subprocess.run(
-                javac_cmd,
-                capture_output=True,
-                text=True,
-                cwd=self.source_dir
-            )
+        # Compile - try to compile files individually to get partial success
+        # First, try batch compilation
+        result = subprocess.run(
+            javac_cmd,
+            capture_output=True,
+            text=True,
+            cwd=self.source_dir
+        )
+        
+        # Count compiled classes
+        class_files = list(self.classes_dir.rglob("*.class"))
+        
+        if len(class_files) == 0 and result.returncode != 0:
+            # Batch compilation failed, try compiling files individually
+            print("⚠ Batch compilation failed, trying individual files...")
+            successful = 0
+            failed = 0
             
-            if result.returncode != 0:
-                print(f"⚠ Compilation warnings/errors:")
-                print(result.stderr[:1000])  # Show first 1000 chars of errors
-                # Continue anyway - some errors might be non-critical
+            for java_file in java_files[:100]:  # Limit to first 100 to avoid timeout
+                try:
+                    single_cmd = [
+                        "javac",
+                        "-d", str(self.classes_dir),
+                        "-source", "17",
+                        "-target", "17",
+                        "-encoding", "UTF-8",
+                        str(java_file)
+                    ]
+                    if classpath:
+                        single_cmd.extend(["-cp", classpath])
+                    
+                    single_result = subprocess.run(
+                        single_cmd,
+                        capture_output=True,
+                        text=True,
+                        cwd=self.source_dir,
+                        timeout=5
+                    )
+                    
+                    if single_result.returncode == 0:
+                        successful += 1
+                    else:
+                        failed += 1
+                except:
+                    failed += 1
             
-            # Count compiled classes
             class_files = list(self.classes_dir.rglob("*.class"))
+            print(f"✓ Compiled {len(class_files)} class file(s) ({successful} successful, {failed} failed)")
+        else:
+            if result.returncode != 0:
+                print(f"⚠ Some compilation errors (showing first 500 chars):")
+                print(result.stderr[:500])
             print(f"✓ Compiled {len(class_files)} class file(s)")
-            
-            return len(class_files) > 0
-            
-        except Exception as e:
-            print(f"✗ Compilation failed: {e}")
-            return False
+        
+        return len(class_files) > 0
     
     def create_jar(self, manifest_file: Optional[str] = None) -> bool:
         """
@@ -101,7 +133,14 @@ class ModCompiler:
             print("✗ Must compile first!")
             return False
         
+        # Check if we have any classes to package
+        class_files = list(self.classes_dir.rglob("*.class"))
+        if len(class_files) == 0:
+            print("✗ No compiled classes found to package")
+            return False
+        
         print(f"\nCreating JAR file: {self.output_jar}")
+        print(f"  Packaging {len(class_files)} class file(s)...")
         
         # Ensure output directory exists
         self.output_jar.parent.mkdir(parents=True, exist_ok=True)
@@ -113,7 +152,7 @@ class ModCompiler:
         try:
             with zipfile.ZipFile(self.output_jar, 'w', zipfile.ZIP_DEFLATED) as jar:
                 # Add all class files
-                for class_file in self.classes_dir.rglob("*.class"):
+                for class_file in class_files:
                     # Calculate relative path for JAR entry
                     rel_path = class_file.relative_to(self.classes_dir)
                     jar.write(class_file, rel_path)
@@ -127,23 +166,35 @@ class ModCompiler:
                     jar.writestr("META-INF/MANIFEST.MF", manifest_content)
                 
                 # Copy resources from source directory (non-Java files)
+                resource_count = 0
                 for resource_file in self.source_dir.rglob("*"):
                     if resource_file.is_file() and not resource_file.suffix == ".java":
                         rel_path = resource_file.relative_to(self.source_dir)
-                        # Skip if already added as class
-                        if not str(rel_path).startswith("META-INF/"):
-                            jar.write(resource_file, rel_path)
+                        # Skip if already added as class, but include META-INF
+                        if not str(rel_path).startswith("META-INF/") or "MANIFEST" in str(rel_path):
+                            try:
+                                jar.write(resource_file, rel_path)
+                                resource_count += 1
+                            except:
+                                pass  # Skip files that can't be read
+                
+                if resource_count > 0:
+                    print(f"  Added {resource_count} resource file(s)")
             
             print(f"✓ Created JAR: {self.output_jar}")
             print(f"  Size: {self.output_jar.stat().st_size / 1024:.1f} KB")
+            print(f"  Classes: {len(class_files)}")
             
             # Clean up temporary classes directory
-            shutil.rmtree(self.classes_dir)
+            if self.classes_dir.exists():
+                shutil.rmtree(self.classes_dir)
             
             return True
             
         except Exception as e:
             print(f"✗ Failed to create JAR: {e}")
+            import traceback
+            traceback.print_exc()
             return False
 
 
