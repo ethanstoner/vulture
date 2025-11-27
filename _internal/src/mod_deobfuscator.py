@@ -21,6 +21,16 @@ from typing import Dict, List, Optional, Tuple
 import requests
 from urllib.parse import urlparse
 
+# Import tool manager and version detector
+try:
+    from tool_manager import ToolManager, MappingsDownloader
+    from version_detector import VersionDetector
+except ImportError:
+    # Handle case where running from different directory
+    sys.path.insert(0, str(Path(__file__).parent))
+    from tool_manager import ToolManager, MappingsDownloader
+    from version_detector import VersionDetector
+
 
 class MCPMappingLoader:
     """Loads and manages MCP mappings."""
@@ -175,14 +185,34 @@ class MCPMappingLoader:
 class ModDeobfuscator:
     """Decompiles and deobfuscates Minecraft mods."""
     
-    def __init__(self, jar_path: str, mc_version: str = "1.8.9"):
+    def __init__(self, jar_path: str, mc_version: Optional[str] = None, auto_detect_version: bool = True):
         self.jar_path = Path(jar_path)
-        self.mc_version = mc_version
-        self.mappings = MCPMappingLoader(mc_version)
+        
+        # Auto-detect version if not provided
+        if mc_version is None and auto_detect_version:
+            print("Detecting Minecraft version from mod...")
+            try:
+                detector = VersionDetector(str(self.jar_path))
+                detected_version = detector.detect()
+                detector.close()
+                if detected_version:
+                    self.mc_version = detected_version
+                    print(f"✓ Detected Minecraft version: {self.mc_version}")
+                else:
+                    self.mc_version = "1.8.9"
+                    print(f"⚠ Could not detect version, defaulting to {self.mc_version}")
+            except Exception as e:
+                print(f"⚠ Version detection failed: {e}, defaulting to 1.8.9")
+                self.mc_version = "1.8.9"
+        else:
+            self.mc_version = mc_version or "1.8.9"
+        
+        self.mappings = MCPMappingLoader(self.mc_version)
         self.decompiled_dir = None
         self.deobfuscated_dir = None
+        self.tool_manager = ToolManager()
     
-    def decompile(self, decompiler: str = "cfr", decompiler_path: Optional[str] = None, output_dir: Optional[str] = None) -> Path:
+    def decompile(self, decompiler: str = "cfr", decompiler_path: Optional[str] = None, output_dir: Optional[str] = None, auto_install: bool = True) -> Path:
         """
         Decompile the JAR file using specified decompiler.
         
@@ -203,28 +233,41 @@ class ModDeobfuscator:
         if decompiler_path:
             decompiler_jar = Path(decompiler_path)
         else:
+            # Use tool manager to ensure decompiler is installed
+            if auto_install:
+                if decompiler == "cfr":
+                    self.tool_manager.install_cfr()
+                elif decompiler == "jd-cli":
+                    self.tool_manager.install_jd_cli()
+                elif decompiler == "specialsource":
+                    self.tool_manager.install_specialsource()
+            
             # Try standard locations
             if decompiler == "cfr":
-                decompiler_jar = Path("/workspace/tools/cfr.jar")  # Docker path
-                if not decompiler_jar.exists():
-                    decompiler_jar = Path("tools/cfr.jar")  # Local path
+                decompiler_jar = self.tool_manager.tools_dir / "cfr.jar"
             elif decompiler == "jd-cli":
-                decompiler_jar = Path("/workspace/tools/jd-cli.jar")
-                if not decompiler_jar.exists():
-                    decompiler_jar = Path("tools/jd-cli.jar")
+                decompiler_jar = self.tool_manager.tools_dir / "jd-cli.jar"
             elif decompiler == "fernflower":
-                decompiler_jar = Path("/workspace/tools/fernflower.jar")
-                if not decompiler_jar.exists():
-                    decompiler_jar = Path("tools/fernflower.jar")
+                decompiler_jar = self.tool_manager.tools_dir / "fernflower.jar"
             else:
                 print(f"✗ Unknown decompiler: {decompiler}")
                 return self.decompiled_dir
         
         if not decompiler_jar.exists():
             print(f"⚠ Warning: Decompiler not found: {decompiler_jar}")
-            print(f"Please download {decompiler} and place it in tools/ directory")
-            print("Or specify path with --decompiler-path option")
-            return self.decompiled_dir
+            if auto_install:
+                print(f"Attempting to install {decompiler}...")
+                if decompiler == "cfr":
+                    if self.tool_manager.install_cfr():
+                        decompiler_jar = self.tool_manager.tools_dir / "cfr.jar"
+                elif decompiler == "jd-cli":
+                    if self.tool_manager.install_jd_cli():
+                        decompiler_jar = self.tool_manager.tools_dir / "jd-cli.jar"
+            
+            if not decompiler_jar.exists():
+                print(f"Please download {decompiler} and place it in tools/ directory")
+                print("Or specify path with --decompiler-path option")
+                return self.decompiled_dir
         
         # Build command based on decompiler
         if decompiler == "cfr":
@@ -265,18 +308,49 @@ class ModDeobfuscator:
         
         return self.decompiled_dir
     
-    def load_mappings(self, mappings_file: str):
-        """Load MCP mappings from file."""
+    def load_mappings(self, mappings_file: Optional[str] = None, auto_download: bool = True):
+        """Load MCP mappings from file, or auto-download if not provided."""
+        # If no mappings file provided, try to auto-download
+        if mappings_file is None and auto_download:
+            print(f"\nNo mappings file provided. Attempting to download for Minecraft {self.mc_version}...")
+            downloader = MappingsDownloader()
+            mappings_path = downloader.get_mappings(self.mc_version)
+            if mappings_path:
+                mappings_file = str(mappings_path)
+                print(f"✓ Using downloaded mappings: {mappings_file}")
+            else:
+                print(f"⚠ Could not download mappings for {self.mc_version}")
+                print("Continuing without deobfuscation...")
+                return False
+        
+        if mappings_file is None:
+            return False
+        
         mappings_path = Path(mappings_file)
         
         if not mappings_path.exists():
             print(f"⚠ Mappings file not found: {mappings_file}")
-            print("\nTo get mappings:")
-            print("1. Download from MCPBot: http://export.mcpbot.bspk.rs/")
-            print("2. Or use Forge's mapping files")
-            print("3. Or extract from MCP/Forge installation")
-            print("4. Or use ProGuard mapping.txt if available")
-            return False
+            if auto_download:
+                print(f"Attempting to download mappings for Minecraft {self.mc_version}...")
+                downloader = MappingsDownloader()
+                mappings_path = downloader.get_mappings(self.mc_version)
+                if mappings_path:
+                    mappings_file = str(mappings_path)
+                    mappings_path = Path(mappings_file)
+                else:
+                    print("\nTo get mappings manually:")
+                    print("1. Download from MCPBot: http://export.mcpbot.bspk.rs/")
+                    print("2. Or use Forge's mapping files")
+                    print("3. Or extract from MCP/Forge installation")
+                    print("4. Or use ProGuard mapping.txt if available")
+                    return False
+            else:
+                print("\nTo get mappings:")
+                print("1. Download from MCPBot: http://export.mcpbot.bspk.rs/")
+                print("2. Or use Forge's mapping files")
+                print("3. Or extract from MCP/Forge installation")
+                print("4. Or use ProGuard mapping.txt if available")
+                return False
         
         if mappings_file.endswith('.srg'):
             self.mappings.load_from_srg(mappings_file)
@@ -305,10 +379,9 @@ class ModDeobfuscator:
         
         output_path = Path(output_jar)
         
-        # Find SpecialSource
-        specialsource_jar = Path("/workspace/tools/specialsource.jar")
-        if not specialsource_jar.exists():
-            specialsource_jar = Path("tools/specialsource.jar")
+        # Ensure SpecialSource is installed
+        self.tool_manager.install_specialsource()
+        specialsource_jar = self.tool_manager.tools_dir / "specialsource.jar"
         
         if not specialsource_jar.exists():
             print("⚠ SpecialSource not found. Using text-based mapping instead.")
@@ -400,14 +473,24 @@ class ModDeobfuscator:
         
         return content != original_content
     
-    def deobfuscate(self, mappings_file: str, output_dir: Optional[str] = None) -> Path:
+    def deobfuscate(self, mappings_file: Optional[str] = None, output_dir: Optional[str] = None, auto_download: bool = True) -> Path:
         """Deobfuscate decompiled code using mappings."""
         if self.decompiled_dir is None:
             print("⚠ Must decompile first!")
             return None
         
-        if not self.load_mappings(mappings_file):
+        if not self.load_mappings(mappings_file, auto_download=auto_download):
             return None
+        
+        # Get the mappings file path after loading
+        if mappings_file is None:
+            # Try to find downloaded mappings
+            downloader = MappingsDownloader()
+            mappings_path = downloader.get_mappings(self.mc_version)
+            if mappings_path:
+                mappings_file = str(mappings_path)
+            else:
+                return None
         
         if output_dir is None:
             output_dir = self.jar_path.stem + "_deobfuscated"
@@ -520,8 +603,10 @@ def main():
         print("  --output <dir>         Output directory")
         print("  --analyze              Analyze deobfuscated code")
         print("  --use-specialsource    Use SpecialSource for mapping (recommended)")
+        print("  --no-auto-download     Disable auto-download of tools and mappings")
         print("\nExample:")
         print("  python mod_deobfuscator.py mod.jar mappings.srg --analyze")
+        print("  python mod_deobfuscator.py mod.jar  # Auto-detects version and downloads mappings")
         sys.exit(1)
     
     jar_path = sys.argv[1]
@@ -559,13 +644,28 @@ def main():
         elif sys.argv[i] == '--no-specialsource':
             use_specialsource = False
             i += 1
+        elif sys.argv[i] == '--no-auto-download':
+            # Handled in main function
+            i += 1
         else:
             i += 1
     
     try:
-        deobfuscator = ModDeobfuscator(jar_path, mc_version)
+        # Parse auto-download flag
+        auto_download = '--no-auto-download' not in sys.argv
         
-        # Apply mappings with SpecialSource first (if mappings provided and enabled)
+        deobfuscator = ModDeobfuscator(jar_path, mc_version, auto_detect_version=True)
+        
+        # Auto-download mappings if not provided
+        if mappings_file is None and auto_download:
+            print(f"\nNo mappings file provided. Attempting to auto-download for Minecraft {deobfuscator.mc_version}...")
+            downloader = MappingsDownloader()
+            downloaded_mappings = downloader.get_mappings(deobfuscator.mc_version)
+            if downloaded_mappings:
+                mappings_file = str(downloaded_mappings)
+                print(f"✓ Using auto-downloaded mappings: {mappings_file}")
+        
+        # Apply mappings with SpecialSource first (if mappings available and enabled)
         remapped_jar = None
         if mappings_file and use_specialsource:
             remapped_jar = deobfuscator.apply_mappings_with_specialsource(mappings_file)
@@ -574,21 +674,22 @@ def main():
         jar_to_decompile = remapped_jar if remapped_jar else deobfuscator.jar_path
         if remapped_jar:
             # Create new deobfuscator for remapped JAR
-            deobfuscator = ModDeobfuscator(jar_to_decompile, mc_version)
+            deobfuscator = ModDeobfuscator(jar_to_decompile, mc_version, auto_detect_version=False)
         
-        # Decompile
-        deobfuscator.decompile(decompiler, decompiler_path, output_dir)
+        # Decompile (with auto-install enabled)
+        deobfuscator.decompile(decompiler, decompiler_path, output_dir, auto_install=auto_download)
         
         # Apply text-based mappings to decompiled code (for additional cleanup)
-        if mappings_file:
-            deobfuscator.deobfuscate(mappings_file, output_dir)
+        if mappings_file or auto_download:
+            deobfuscator.deobfuscate(mappings_file, output_dir, auto_download=auto_download)
             
             if analyze:
                 deobfuscator.analyze_deobfuscated()
         else:
             print("\n⚠ No mappings file provided. Code is decompiled but not deobfuscated.")
-            print("To deobfuscate, provide a mappings file:")
+            print("To deobfuscate, provide a mappings file or use --auto-download:")
             print("  python mod_deobfuscator.py mod.jar mappings.srg")
+            print("  python mod_deobfuscator.py mod.jar  # Will auto-download mappings")
     
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)

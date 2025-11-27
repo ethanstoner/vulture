@@ -11,6 +11,10 @@ A comprehensive toolkit for analyzing, decompiling, and deobfuscating Minecraft 
 - **Security Detection**: Automatically identify suspicious patterns (webhooks, token access, network code)
 - **Isolated Execution**: All tools run in Docker containers for safety
 - **Multiple Decompilers**: Support for CFR, JD-CLI, and Fernflower
+- **Auto-Install Tools**: Automatically downloads and manages decompiler versions
+- **Auto-Download Mappings**: Automatically downloads Minecraft version mappings from MCPBot
+- **Version Detection**: Automatically detects Minecraft version from mod JAR files
+- **Configuration Management**: Customizable settings via configuration file
 
 ## Requirements
 
@@ -40,11 +44,14 @@ A comprehensive toolkit for analyzing, decompiling, and deobfuscating Minecraft 
 
 The script will:
 1. Build the Docker image (if needed)
-2. Ask you what to do:
+2. **Automatically install required tools** (CFR, JD-CLI, SpecialSource) on first run
+3. Ask you what to do:
    - **Decompile**: Process JARs from `input/to_be_decompiled/` → saves to `output/decompiled/`
    - **Compile**: Process Java source from `input/to_be_compiled/` → saves to `output/compiled/`
    - **Both**: Decompile then compile in sequence
-3. Optionally deobfuscate (if mappings are available in `_internal/mappings/`)
+4. **Automatically detect Minecraft version** from mod JAR files
+5. **Automatically download mappings** for the detected version (if available)
+6. Optionally deobfuscate using downloaded or local mappings
 
 ### Manual Docker Usage
 
@@ -52,13 +59,22 @@ For advanced users who want to run tools manually:
 
 ```bash
 # Build the Docker image
-docker compose -f docker/docker-compose.yml build
+docker compose -f _internal/docker/docker-compose.yml build
 
 # Run analysis on a mod
-docker compose -f docker/docker-compose.yml run --rm vulture python3 /workspace/mod_analyzer.py input/your_mod.jar
+docker compose -f _internal/docker/docker-compose.yml run --rm vulture python3 /workspace/mod_analyzer.py input/your_mod.jar
 
-# Decompile a mod
-docker compose -f docker/docker-compose.yml run --rm vulture python3 /workspace/mod_deobfuscator.py input/your_mod.jar --output output/mod_name
+# Decompile a mod (auto-detects version and downloads mappings)
+docker compose -f _internal/docker/docker-compose.yml run --rm vulture python3 /workspace/mod_deobfuscator.py input/your_mod.jar --output output/mod_name
+
+# Decompile with specific version
+docker compose -f _internal/docker/docker-compose.yml run --rm vulture python3 /workspace/mod_deobfuscator.py input/your_mod.jar --mc-version 1.12.2 --output output/mod_name
+
+# Install/update tools manually
+docker compose -f _internal/docker/docker-compose.yml run --rm vulture python3 /workspace/tool_manager.py --install-tools
+
+# Download mappings for a specific version
+docker compose -f _internal/docker/docker-compose.yml run --rm vulture python3 /workspace/tool_manager.py --download-mappings 1.8.9
 ```
 
 **Note:** For most users, the automatic processing scripts are recommended.
@@ -132,10 +148,10 @@ Analyzes mod structure and detects security patterns without modifying the JAR:
 
 ```bash
 # Basic analysis (inside Docker container)
-docker compose run --rm vulture python3 /workspace/mod_analyzer.py input/mod.jar
+docker compose -f _internal/docker/docker-compose.yml run --rm vulture python3 /workspace/mod_analyzer.py input/mod.jar
 
 # Save results to JSON
-docker compose run --rm vulture python3 /workspace/mod_analyzer.py input/mod.jar --json
+docker compose -f _internal/docker/docker-compose.yml run --rm vulture python3 /workspace/mod_analyzer.py input/mod.jar --json
 ```
 
 The analyzer reports:
@@ -149,14 +165,14 @@ The analyzer reports:
 Decompiles and optionally deobfuscates mods:
 
 ```bash
-# Basic decompilation (inside Docker container)
-docker compose run --rm vulture python3 /workspace/mod_deobfuscator.py input/mod.jar --output decompiled/mod_name
+# Basic decompilation (inside Docker container, auto-detects version)
+docker compose -f _internal/docker/docker-compose.yml run --rm vulture python3 /workspace/mod_deobfuscator.py input/mod.jar --output decompiled/mod_name
 
 # With MCP mappings (deobfuscation)
-docker compose run --rm vulture python3 /workspace/mod_deobfuscator.py input/mod.jar mappings/joined.srg --output decompiled/mod_name
+docker compose -f _internal/docker/docker-compose.yml run --rm vulture python3 /workspace/mod_deobfuscator.py input/mod.jar mappings/joined.srg --output decompiled/mod_name
 
 # Choose specific decompiler
-docker compose run --rm vulture python3 /workspace/mod_deobfuscator.py input/mod.jar --decompiler jd-cli --output decompiled/mod_name
+docker compose -f _internal/docker/docker-compose.yml run --rm vulture python3 /workspace/mod_deobfuscator.py input/mod.jar --decompiler jd-cli --output decompiled/mod_name
 ```
 
 **Supported Decompilers:**
@@ -170,10 +186,10 @@ Compiles decompiled Java source code back into JAR files:
 
 ```bash
 # Compile decompiled source to JAR (inside Docker container)
-docker compose run --rm vulture python3 /workspace/mod_compiler.py decompiled/mod_name compiled/mod_name_recompiled.jar
+docker compose -f _internal/docker/docker-compose.yml run --rm vulture python3 /workspace/mod_compiler.py decompiled/mod_name compiled/mod_name_recompiled.jar
 
 # With classpath for dependencies
-docker compose run --rm vulture python3 /workspace/mod_compiler.py decompiled/mod_name compiled/mod_name_recompiled.jar -cp libs/*
+docker compose -f _internal/docker/docker-compose.yml run --rm vulture python3 /workspace/mod_compiler.py decompiled/mod_name compiled/mod_name_recompiled.jar -cp libs/*
 ```
 
 The compiler:
@@ -192,7 +208,21 @@ Mappings translate obfuscated Minecraft names back to readable ones. Required fo
 
 Mappings reverse this process to restore readable names.
 
-### MCPBot (Recommended for older versions)
+### Automatic Download (Recommended)
+
+Vulture can automatically download mappings for detected Minecraft versions:
+
+```bash
+# Mappings are auto-downloaded when decompiling
+docker compose -f _internal/docker/docker-compose.yml run --rm vulture python3 /workspace/mod_deobfuscator.py input/mod.jar
+
+# Or download manually for a specific version
+docker compose -f _internal/docker/docker-compose.yml run --rm vulture python3 /workspace/tool_manager.py --download-mappings 1.8.9
+```
+
+### Manual Download
+
+#### MCPBot (Recommended for older versions)
 
 ```bash
 # Download for Minecraft 1.8.9
@@ -200,18 +230,18 @@ wget http://export.mcpbot.bspk.rs/mcp_snapshot/1.8.9/mcp_snapshot-1.8.9.zip
 unzip mcp_snapshot-1.8.9.zip -d mappings/
 ```
 
-### Forge Mappings
+#### Forge Mappings
 
 Forge provides official mappings for recent versions:
 - Visit https://files.minecraftforge.net/
 - Download `*-mappings.zip` for your Minecraft version
 - Extract to `mappings/` directory
 
-### ProGuard Mapping File
+#### ProGuard Mapping File
 
 If you have a ProGuard `mapping.txt` file:
 ```bash
-docker compose run --rm vulture python3 /workspace/mod_deobfuscator.py input/mod.jar mappings/mapping.txt --output output/mod_name
+docker compose -f _internal/docker/docker-compose.yml run --rm vulture python3 /workspace/mod_deobfuscator.py input/mod.jar mappings/mapping.txt --output output/mod_name
 ```
 
 ## Decompilation Quality
@@ -246,13 +276,13 @@ The Docker image includes:
 
 On Linux/macOS:
 ```bash
-docker compose run --rm vulture
+docker compose -f _internal/docker/docker-compose.yml run --rm vulture
 # You're now inside the container at /workspace
 ```
 
 On Windows:
 ```cmd
-docker compose run --rm vulture
+docker compose -f _internal/docker/docker-compose.yml run --rm vulture
 REM You're now inside the container at /workspace
 ```
 
@@ -298,15 +328,58 @@ Security Analysis Results:
 - Network code found in: com.example.NetworkHandler
 ```
 
+## Tool Management
+
+Vulture includes a tool manager that automatically handles decompiler installations and updates:
+
+```bash
+# Install all tools (CFR, JD-CLI, SpecialSource)
+docker compose -f _internal/docker/docker-compose.yml run --rm vulture python3 /workspace/tool_manager.py --install-tools
+
+# Install specific tool
+docker compose -f _internal/docker/docker-compose.yml run --rm vulture python3 /workspace/tool_manager.py --install-cfr
+docker compose -f _internal/docker/docker-compose.yml run --rm vulture python3 /workspace/tool_manager.py --install-jd-cli
+docker compose -f _internal/docker/docker-compose.yml run --rm vulture python3 /workspace/tool_manager.py --install-specialsource
+
+# Force reinstall (download latest versions)
+docker compose -f _internal/docker/docker-compose.yml run --rm vulture python3 /workspace/tool_manager.py --install-tools --force
+```
+
+Tools are automatically installed on first use, but you can pre-install them for faster startup.
+
+## Configuration
+
+Vulture supports configuration files for customizing default behavior:
+
+```bash
+# View current configuration
+docker compose -f _internal/docker/docker-compose.yml run --rm vulture python3 /workspace/config.py --list
+
+# Set configuration value
+docker compose -f _internal/docker/docker-compose.yml run --rm vulture python3 /workspace/config.py --set default_mc_version 1.12.2
+docker compose -f _internal/docker/docker-compose.yml run --rm vulture python3 /workspace/config.py --set auto_download_tools true
+
+# Get configuration value
+docker compose -f _internal/docker/docker-compose.yml run --rm vulture python3 /workspace/config.py --get default_decompiler
+```
+
+Configuration is saved to `~/.vulture_config.json` (or `/workspace/.vulture_config.json` in Docker).
+
 ## Troubleshooting
 
 **Decompiler not found**
-- Ensure you're using Docker (decompilers are pre-installed)
+- Tools are automatically installed on first use
+- Run `python3 /workspace/tool_manager.py --install-tools` to manually install
 - Or manually download decompiler JARs to `tools/` directory
 
 **Mappings file not found**
-- Download mappings using methods described above
-- Place in `mappings/` directory
+- Mappings are automatically downloaded for detected versions
+- Run `python3 /workspace/tool_manager.py --download-mappings <version>` to manually download
+- Or download mappings using methods described above and place in `mappings/` directory
+
+**Version detection fails**
+- Specify version manually: `--mc-version 1.8.9`
+- Check mod JAR filename and `mcmod.info` for version hints
 
 **Java not found (local environment)**
 - Install Java 8+ or use Docker instead
@@ -316,6 +389,11 @@ Security Analysis Results:
 docker compose down
 docker compose build --no-cache
 ```
+
+**Auto-download fails**
+- Check internet connection
+- Use `--no-auto-download` flag to disable auto-downloads
+- Manually download tools/mappings as described above
 
 ## Limitations
 

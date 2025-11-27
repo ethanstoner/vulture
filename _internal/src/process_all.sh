@@ -15,6 +15,11 @@ echo "Vulture - Mod Processing"
 echo "=========================================="
 echo ""
 
+# Ensure tools are installed
+echo "Ensuring required tools are installed..."
+python3 /workspace/tool_manager.py --install-tools
+echo ""
+
 # Ask user what they want to do
 echo "What would you like to do?"
 echo "  1) Decompile JAR files"

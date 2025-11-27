@@ -1,0 +1,72 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+.docker/
+
+# Test outputs and temporary files
+output/decompiled/*
+!output/decompiled/README.txt
+output/compiled/*
+!output/compiled/README.txt
+
+# Test mods (keep README files)
+input/to_be_decompiled/*.jar
+input/to_be_compiled/*
+!input/to_be_decompiled/README.txt
+!input/to_be_compiled/README.txt
+
+# Mappings (user-provided)
+mappings/*
+!mappings/.gitkeep
+
+# Tools (auto-downloaded)
+tools/*
+!tools/.gitkeep
+
+# Configuration (user-specific)
+.vulture_config.json
+*_config.json
+
+# QA test outputs
+qa_test.sh
+full_qa_test.py
+comprehensive_qa.py
+test_all_versions.sh
+*_REPORT.md
+QA_REPORT.md
+FINAL_QA_REPORT*.md
+VERSION_COMPATIBILITY_REPORT.md
+DECOMPILATION_REPORT.md
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.bak
+*.cache
