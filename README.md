@@ -247,14 +247,14 @@ docker compose -f _internal/docker/docker-compose.yml run --rm vulture python3 /
 ## Decompilation Quality
 
 **What decompiles well:**
-- ✅ Simple classes and methods
-- ✅ Standard Java patterns
-- ✅ Public APIs and interfaces
+- Simple classes and methods
+- Standard Java patterns
+- Public APIs and interfaces
 
 **What may not decompile perfectly:**
-- ⚠️ Lambda expressions (may show as synthetic methods)
-- ⚠️ Obfuscated code (variable names lost)
-- ⚠️ Inline optimizations (may be restructured)
+- Lambda expressions (may show as synthetic methods)
+- Obfuscated code (variable names lost)
+- Inline optimizations (may be restructured)
 
 **Note:** Decompiled code may not be 100% accurate, especially with heavy obfuscation. Variable names are often auto-generated.
 
