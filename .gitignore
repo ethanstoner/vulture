@@ -57,11 +57,16 @@ qa_test.sh
 full_qa_test.py
 comprehensive_qa.py
 test_all_versions.sh
+final_verification_test.sh
+qa-check.sh
 *_REPORT.md
 QA_REPORT.md
 FINAL_QA_REPORT*.md
 VERSION_COMPATIBILITY_REPORT.md
 DECOMPILATION_REPORT.md
+
+# Development tools
+.cursorignore
 
 # Logs
 *.log
